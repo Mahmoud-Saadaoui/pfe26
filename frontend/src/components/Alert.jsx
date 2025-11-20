@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiCheckCircle, FiXCircle, FiX } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 
 const Alert = ({ message, type }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(true);
@@ -16,22 +16,20 @@ const Alert = ({ message, type }) => {
   const alertTypeClass = {
     success: {
       bg: "bg-emerald-100/80 border-emerald-300 text-emerald-900",
-      icon: <FiCheckCircle className="w-6 h-6 text-emerald-600"/>,
     },
     error: {
       bg: "bg-rose-100/80 border-rose-300 text-rose-900",
-      icon: <FiXCircle className="w-6 h-6 text-rose-600" />
     },
   };
   const { bg, icon } = alertTypeClass[type] || alertTypeClass.success;
 
   if (!isAlertOpen) return null;
   return (
-    <div className="absolute top-3 flex items-center w-[98%] sm:w-[95%] z-50">
+    <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center w-[98%] sm:w-[95%] z-50">
       <div
         className={`w-full mx-4 sm:mx-0 rounded-md border shadow-lg p-4 flex items-start gap-4 ${bg}`}
       >
-        {icon}
+        {/* {icon} */}
         <p className="flex-1 break-words leading-relaxed text-sm sm:text-base">
           {message}
         </p>
