@@ -1,80 +1,102 @@
-// Import du modèle Theme pour accéder à la base de données
-const Theme = require("../models/Theme")
-// Import de la fonction validationResult pour vérifier les erreurs de validation des requêtes
-const { validationResult } = require("express-validator")
+const Theme = require("../models/Theme"); // Sequelize model
+const { validationResult } = require("express-validator");
+
+// Static array for immediate frontend use
+let themes = [
+  { id: 1, nom: "Mariage" },
+  { id: 2, nom: "Héritage" },
+  { id: 3, nom: "Fiscalité" },
+  { id: 4, nom: "Urbanisme" },
+  { id: 5, nom: "Droits sociaux" },
+  { id: 6, nom: "Contrats" },
+  { id: 7, nom: "Commerce" },
+  { id: 8, nom: "Litiges" },
+];
+let nextId = 9;
 
 // -------------------
-// Récupérer tous les thèmes
+// Get all themes
 // -------------------
 exports.getAll = async (req, res, next) => {
   try {
-    // Appel à la méthode du modèle pour récupérer tous les thèmes
-    const themes = await Theme.findAll()
-    // Retourne les thèmes au format JSON
-    res.json(themes)
+    // Try to get from DB if available
+    const dbThemes = await Theme.findAll().catch(() => null);
+
+    // If DB returns data, use it; otherwise fallback to static array
+    res.json(dbThemes?.length ? dbThemes : themes);
   } catch (error) {
-    // Si erreur, passe l'erreur au middleware de gestion d'erreurs
-    next(error)
+    next(error);
   }
-}
+};
 
 // -------------------
-// Créer un nouveau thème
+// Create a new theme
 // -------------------
 exports.create = async (req, res, next) => {
-  // Vérifie si la requête contient des erreurs de validation
-  const errors = validationResult(req)
-  if (!errors.isEmpty())
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(), // Retourne un tableau d'erreurs de validation
-    })
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
   try {
-    // Appel à la méthode create du modèle avec les données envoyées dans le corps de la requête
-    const id = await Theme.create(req.body)
-    // Retourne un message de succès avec l'id du thème créé
-    res.status(201).json({ success: true, id, message: "Theme created" })
+    const { nom } = req.body;
+    if (!nom) return res.status(400).json({ success: false, message: "Le nom est requis" });
+
+    // Add to static array
+    const newTheme = { id: nextId++, nom };
+    themes.push(newTheme);
+
+    // Optional: try saving to DB
+    await Theme.create({ nom }).catch(() => null);
+
+    res.status(201).json({ success: true, id: newTheme.id, message: "Theme created" });
   } catch (error) {
-    // Si erreur, passe l'erreur au middleware de gestion d'erreurs
-    next(error)
+    next(error);
   }
-}
+};
 
 // -------------------
-// Mettre à jour un thème existant
+// Update theme
 // -------------------
 exports.update = async (req, res, next) => {
-  // Vérifie si la requête contient des erreurs de validation
-  const errors = validationResult(req)
-  if (!errors.isEmpty())
-    return res.status(400).json({
-      success: false,
-      errors: errors.array(), // Retourne les erreurs de validation
-    })
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
   try {
-    // Appel à la méthode update du modèle avec l'id du thème à mettre à jour et les nouvelles données
-    await Theme.update(req.params.id, req.body)
-    // Retourne un message de succès
-    res.json({ success: true, message: "Theme updated" })
+    const id = parseInt(req.params.id);
+    const { nom } = req.body;
+
+    // Update in static array
+    const theme = themes.find(t => t.id === id);
+    if (!theme) return res.status(404).json({ success: false, message: "Theme not found" });
+    theme.nom = nom || theme.nom;
+
+    // Optional: update in DB
+    const dbTheme = await Theme.findByPk(id).catch(() => null);
+    if (dbTheme) await dbTheme.update({ nom }).catch(() => null);
+
+    res.json({ success: true, message: "Theme updated" });
   } catch (error) {
-    // Si erreur, passe l'erreur au middleware de gestion d'erreurs
-    next(error)
+    next(error);
   }
-}
+};
 
 // -------------------
-// Supprimer un thème
+// Delete theme
 // -------------------
 exports.delete = async (req, res, next) => {
   try {
-    // Appel à la méthode delete du modèle avec l'id du thème à supprimer
-    await Theme.delete(req.params.id)
-    // Retourne un message de succès
-    res.json({ success: true, message: "Theme deleted" })
+    const id = parseInt(req.params.id);
+
+    // Remove from static array
+    const index = themes.findIndex(t => t.id === id);
+    if (index === -1) return res.status(404).json({ success: false, message: "Theme not found" });
+    themes.splice(index, 1);
+
+    // Optional: remove from DB
+    const dbTheme = await Theme.findByPk(id).catch(() => null);
+    if (dbTheme) await dbTheme.destroy().catch(() => null);
+
+    res.json({ success: true, message: "Theme deleted" });
   } catch (error) {
-    // Si erreur, passe l'erreur au middleware de gestion d'erreurs
-    next(error)
+    next(error);
   }
-}
+};
