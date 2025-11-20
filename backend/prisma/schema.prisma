@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Commune {
+  id       Int           @id @default(autoincrement())
+  nom      String
+  codePostal String
+  interventions Intervention[]
+}
+
+model Theme {
+  id       Int           @id @default(autoincrement())
+  nom      String
+  interventions Intervention[]
+}
+
+model Utilisateur {
+  id          Int           @id @default(autoincrement())
+  nom         String
+  prenom      String
+  email       String        @unique
+  motDePasseHash String
+  role        Role
+  interventions Intervention[]
+}
+
+model Intervention {
+  id             Int           @id @default(autoincrement())
+  commune        Commune       @relation(fields: [communeId], references: [id])
+  communeId      Int
+  theme          Theme         @relation(fields: [themeId], references: [id])
+  themeId        Int
+  utilisateur    Utilisateur   @relation(fields: [utilisateurId], references: [id])
+  utilisateurId  Int
+  nomUsager      String
+  prenomUsager   String
+  question       String
+  reponse        String?
+  statut         Statut
+  dateCreation   DateTime      @default(now())
+  dateReponse    DateTime?
+  satisfaction   Int?          // optionnel
+  piecesJointe   PieceJointe[]
+}
+
+model PieceJointe {
+  id            Int           @id @default(autoincrement())
+  intervention  Intervention  @relation(fields: [interventionId], references: [id])
+  interventionId Int
+  publicId      String        // identifiant Cloudinary
+  secureUrl     String        // URL sécurisée Cloudinary
+  type          String        // type de fichier (PDF, image, etc.)
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum Statut {
+  EN_COURS
+  TRAITEE
+  ARCHIVEE
+}
