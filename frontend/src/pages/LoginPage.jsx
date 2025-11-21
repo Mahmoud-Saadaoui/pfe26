@@ -5,11 +5,14 @@ import Spinner from "../components/Spinner";
 import { loginValidation } from "../validations/loginValidation";
 import { useLogin } from "../hooks/useAuthQueries";
 import { AppContext } from "../context/appContext";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const navigate = useNavigate()
 
   const {mutate, isPending, error, isError} = useLogin()
   const { setCredentials } = useContext(AppContext)
@@ -24,6 +27,12 @@ const LoginPage = () => {
     mutate({ email, motDePasse }, {
       onSuccess: (data) => {
         setCredentials(data)
+        const role = data?.user?.role;
+        if (role === "ADMIN") {
+          navigate("/admin");
+        } else {
+          navigate("/agent");
+        }
       },
     })
     setEmail("")
