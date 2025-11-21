@@ -1,11 +1,11 @@
 // Regex Patterns
 const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
 // Required field
 export const validateRequired = (value, fieldName = "Field") => {
   if (!value || value.trim() === "") {
-    return `⚠️ ${fieldName} est obligatoire !`;
+    return `⚠️ ${fieldName} est obligatoire!`;
   }
   return null;
 };
@@ -17,15 +17,15 @@ export const validateEmail = (email) => {
   return null;
 };
 
-export const validatePassword = (password) => {
-  if (!passwordRegex.test(password)) {
-    return "🔒 Le mot de passe doit contenir entre 8 et 20 caractères, incluant lettres et chiffres.";
+export const validatePassword = (motDePasse) => {
+  if (!passwordRegex.test(motDePasse)) {
+    return "🔒 Le mot de passe doit contenir entre 5 et 20 caractères, incluant lettres et chiffres.";
   }
   return null;
 };
 
 // 🔥 Main validation for Login Form
-export const loginValidation = ({ email, password }) => {
+export const loginValidation = ({ email, motDePasse }) => {
   let error;
 
   // 1. Required Email
@@ -37,11 +37,11 @@ export const loginValidation = ({ email, password }) => {
   if (error) return error;
 
   // 3. Required Password
-  error = validateRequired(password, "Mot de passe");
+  error = validateRequired(motDePasse, "Mot de passe");
   if (error) return error;
 
   // 4. Valid Password Format
-  error = validatePassword(password);
+  error = validatePassword(motDePasse);
   if (error) return error;
 
   return null;
