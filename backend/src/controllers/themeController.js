@@ -1,4 +1,4 @@
-const Theme = require("../models/Theme"); // Sequelize model
+const Theme = require("../models/Theme"); 
 const { validationResult } = require("express-validator");
 
 // Static array for immediate frontend use
