@@ -1,3 +1,4 @@
+import { useContext } from "react";
 import {
   createBrowserRouter,
   Navigate,
@@ -22,10 +23,11 @@ import CreateThemePage from "./pages/admin/themes/CreateThemePage.jsx";
 import EditThemePage from "./pages/admin/themes/EditThemePage.jsx";
 import CreateInterventionPage from "./pages/agent/CreateInterventionPage.jsx";
 import EditInterventionPage from "./pages/agent/EditInterventionPage.jsx";
+import { AppContext } from "./context/appContext.jsx";
 
 function Router() {
-  const isAuthenticated = true;
-  const role = "admin"; 
+  const { auth, isTokenExpired } = useContext(AppContext)
+  const isAdmin = auth?.user.role === "ADMIN";
 
   const router = createBrowserRouter([
     {
@@ -38,7 +40,7 @@ function Router() {
         {
           path: "admin",
           element:
-            isAuthenticated && role === "admin"
+            auth && isAdmin && !isTokenExpired
               ? <AdminLayout />
               : <Navigate to="/" />,
           children: [
@@ -62,7 +64,7 @@ function Router() {
         {
           path: "agent",
           element:
-            isAuthenticated && (role === "agent" || role === "admin")
+            auth && !isTokenExpired
               ? <AgentLayout />
               : <Navigate to="/" />,
           children: [
