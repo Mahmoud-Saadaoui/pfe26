@@ -1,97 +1,234 @@
-const Intervention = require("../models/Intervention")
-const { validationResult } = require("express-validator")
+import prisma from '../prisma/client.js'
 
-// -------------------
-// Récupérer toutes les interventions
-// -------------------
-exports.getAll = async (req, res, next) => {
+// Create an intervention
+export const createIntervention = async (req, res) => {
   try {
-    const interventions = await Intervention.findAll() // Récupère toutes les interventions depuis la base
-    res.json(interventions)
-  } catch (error) {
-    next(error) // Passe l'erreur au middleware de gestion des erreurs
-  }
-}
+    const utilisateurId = req.user?.id
+    const { communeId, themeId, nomUsager, prenomUsager, question } = req.body
 
-// -------------------
-// Créer une nouvelle intervention
-// -------------------
-exports.create = async (req, res, next) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) 
-    return res.status(400).json({ success: false, errors: errors.array() }) // Retourne les erreurs de validation
+    if (!communeId || !themeId || !nomUsager || !prenomUsager || !question) {
+      return res.status(400).json({ message: 'Missing required fields' })
+    }
 
-  try {
-    const id = await Intervention.create(req.body) // Crée une intervention dans la base
-    res.status(201).json({ success: true, id, message: "Intervention created" })
-  } catch (error) {
-    next(error)
-  }
-}
-
-// -------------------
-// Mettre à jour une intervention existante
-// -------------------
-exports.update = async (req, res, next) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) 
-    return res.status(400).json({ success: false, errors: errors.array() })
-
-  try {
-    await Intervention.update(req.params.id, req.body) // Met à jour l'intervention par son ID
-    res.json({ success: true, message: "Intervention updated" })
-  } catch (error) {
-    next(error)
-  }
-}
-
-// -------------------
-// Mettre à jour le statut d'une intervention
-// -------------------
-exports.updateStatus = async (req, res, next) => {
-  const { statut } = req.body
-  if (!["New", "In Progress", "Processed", "Archived"].includes(statut)) {
-    return res.status(400).json({ success: false, message: "Invalid status" }) // Vérifie que le statut est valide
-  }
-
-  try {
-    await Intervention.updateStatus(req.params.id, statut) // Met à jour le statut dans la base
-    res.json({ success: true, message: "Status updated" })
-  } catch (error) {
-    next(error)
-  }
-}
-
-// -------------------
-// Ajouter une réponse à une intervention
-// -------------------
-exports.respond = async (req, res, next) => {
-  const { reponse } = req.body
-  if (!reponse) return res.status(400).json({ success: false, message: "Response is required" })
-
-  try {
-    await Intervention.addResponse(req.params.id, {
-      reponse,
-      utilisateur_id: req.user.id, // Associe la réponse à l'utilisateur connecté
+    const intervention = await prisma.intervention.create({
+      data: {
+        communeId: Number(communeId),
+        themeId: Number(themeId),
+        utilisateurId: utilisateurId ? Number(utilisateurId) : null,
+        nomUsager,
+        prenomUsager,
+        question,
+        statut: 'EN_COURS',
+      },
+      include: { commune: true, theme: true, utilisateur: true, piecesJointe: true },
     })
-    res.json({ success: true, message: "Response added" })
-  } catch (error) {
-    next(error)
+
+    res.status(201).json(intervention)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Internal Server Error' })
   }
 }
 
-// -------------------
-// Ajouter une pièce jointe à une intervention
-// -------------------
-exports.uploadAttachment = async (req, res, next) => {
-  // Dans une vraie application, utiliser multer pour gérer les fichiers
-  // Ici, on suppose que le chemin du fichier est fourni dans req.body.filePath
-  const { filePath } = req.body
-
+// Get all interventions
+export const getAllInterventions = async (req, res) => {
   try {
-    await Intervention.addAttachment(req.params.id, filePath) // Ajoute le fichier à l'intervention
-    res.json({ success: true, message: "Attachment added" })
-  } catch (error) {
-    next(error)
+    const interventions = await prisma.intervention.findMany({
+      include: { commune: true, theme: true, utilisateur: true, piecesJointe: true },
+      orderBy: { dateCreation: 'desc' }
+    })
+    res.json(interventions)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Internal Server Error' })
   }
+}
+
+// Get one intervention
+export const getIntervention = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const intervention = await prisma.intervention.findUnique({
+      where: { id },
+      include: { commune: true, theme: true, utilisateur: true, piecesJointe: true }
+    })
+    if (!intervention) return res.status(404).json({ message: 'Intervention not found' })
+    res.json(intervention)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Internal Server Error' })
+  }
+}
+
+// Update intervention (fields editable: communeId, themeId, nomUsager, prenomUsager, question)
+export const updateIntervention = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const { communeId, themeId, nomUsager, prenomUsager, question } = req.body
+
+    const data = {}
+    if (communeId !== undefined) data.communeId = Number(communeId)
+    if (themeId !== undefined) data.themeId = Number(themeId)
+    if (nomUsager !== undefined) data.nomUsager = nomUsager
+    if (prenomUsager !== undefined) data.prenomUsager = prenomUsager
+    if (question !== undefined) data.question = question
+
+    const intervention = await prisma.intervention.update({
+      where: { id },
+      data,
+      include: { commune: true, theme: true, utilisateur: true, piecesJointe: true }
+    })
+
+    res.json(intervention)
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'P2025') return res.status(404).json({ message: 'Intervention not found' })
+    res.status(500).json({ message: 'Internal Server Error' })
+  }
+}
+
+// Reply to an intervention (sets reponse, dateReponse, optional satisfaction, optionally change statut)
+export const replyIntervention = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const { reponse, satisfaction, setStatutTo } = req.body
+
+    if (!reponse) return res.status(400).json({ message: 'reponse is required' })
+
+    const data = { reponse, dateReponse: new Date() }
+    if (satisfaction !== undefined) data.satisfaction = Number(satisfaction)
+    data.statut = setStatutTo ?? 'TRAITEE'
+
+    const intervention = await prisma.intervention.update({
+      where: { id },
+      data,
+      include: { commune: true, theme: true, utilisateur: true, piecesJointe: true }
+    })
+
+    res.json(intervention)
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'P2025') return res.status(404).json({ message: 'Intervention not found' })
+    res.status(500).json({ message: 'Internal Server Error' })
+  }
+}
+
+
+// Change statut only
+export const changeStatut = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const { statut } = req.body
+    if (!statut) return res.status(400).json({ message: 'statut is required' })
+    // Validate enum values
+    const allowed = ['EN_COURS', 'TRAITEE', 'ARCHIVEE']
+    if (!allowed.includes(statut)) return res.status(400).json({ message: 'Invalid statut' })
+
+    const intervention = await prisma.intervention.update({
+      where: { id },
+      data: { statut },
+      include: { commune: true, theme: true, utilisateur: true, piecesJointe: true }
+    })
+
+    res.json(intervention)
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'P2025') return res.status(404).json({ message: 'Intervention not found' })
+    res.status(500).json({ message: 'Internal Server Error' })
+  }
+}
+
+// Add attachments (piecesJointe): accept single object or array of { publicId, secureUrl, type }
+export const addAttachments = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    const payload = req.body
+
+    const attachments = Array.isArray(payload) ? payload : [payload]
+
+    // Validate
+    for (const a of attachments) {
+      if (!a.publicId || !a.secureUrl || !a.type) {
+        return res.status(400).json({ message: 'Each attachment requires publicId, secureUrl and type' })
+      }
+    }
+
+    const created = []
+    for (const a of attachments) {
+      const pj = await prisma.pieceJointe.create({
+        data: { interventionId: id, publicId: a.publicId, secureUrl: a.secureUrl, type: a.type }
+      })
+      created.push(pj)
+    }
+
+    const intervention = await prisma.intervention.findUnique({
+      where: { id },
+      include: { piecesJointe: true }
+    })
+
+    res.status(201).json({ added: created, intervention })
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'P2025') return res.status(404).json({ message: 'Intervention not found' })
+    res.status(500).json({ message: 'Internal Server Error' })
+  }
+}
+
+// Statistics: total, counts by statut, top 5 themes, top 5 communes
+// helper to fetch top themes (returns array)
+const fetchTopThemes = async () => {
+    const topThemesRaw = await prisma.theme.findMany({
+        select: { id: true, nom: true, _count: { select: { interventions: true } } },
+        orderBy: { interventions: { _count: 'desc' } },
+        take: 5,
+    })
+    return topThemesRaw.map(t => ({ id: t.id, nom: t.nom, count: t._count.interventions }))
+}
+
+// helper to fetch top communes (returns array)
+const fetchTopCommunes = async () => {
+    const topCommunesRaw = await prisma.commune.findMany({
+        select: { id: true, nom: true, codePostal: true, _count: { select: { interventions: true } } },
+        orderBy: { interventions: { _count: 'desc' } },
+        take: 5,
+    })
+    return topCommunesRaw.map(c => ({ id: c.id, nom: c.nom, codePostal: c.codePostal, count: c._count.interventions }))
+}
+
+// HTTP handler: get top themes
+export const getTopThemes = async (req, res) => {
+    try {
+        const topThemes = await fetchTopThemes()
+        res.json(topThemes)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Internal Server Error' })
+    }
+}
+
+// HTTP handler: get top communes
+export const getTopCommunes = async (req, res) => {
+    try {
+        const topCommunes = await fetchTopCommunes()
+        res.json(topCommunes)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Internal Server Error' })
+    }
+}
+
+// Statistics: total, counts by statut, top 5 themes, top 5 communes
+export const getStats = async (req, res) => {
+    try {
+        const total = await prisma.intervention.count()
+        const enCours = await prisma.intervention.count({ where: { statut: 'EN_COURS' } })
+        const traitee = await prisma.intervention.count({ where: { statut: 'TRAITEE' } })
+        const archivee = await prisma.intervention.count({ where: { statut: 'ARCHIVEE' } })
+
+
+        res.json({ total, enCours, traitee, archivee })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Internal Server Error' })
+    }
 }

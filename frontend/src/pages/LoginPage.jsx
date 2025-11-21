@@ -1,25 +1,42 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import Alert from "../components/Alert";
 import Spinner from "../components/Spinner";
 import { loginValidation } from "../validations/loginValidation";
+import { useLogin } from "../hooks/useAuthQueries";
+import { AppContext } from "../context/appContext";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [motDePasse, setMotDePasse] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const isPending = false;
-  const isError = false;
+  const navigate = useNavigate()
+
+  const {mutate, isPending, error, isError} = useLogin()
+  const { setCredentials } = useContext(AppContext)
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     setErrorMessage("");
 
-    const validationError = loginValidation({ email, password });
+    const validationError = loginValidation({ email, motDePasse });
     if (validationError) return setErrorMessage(validationError);
 
-    console.log("connecté");
+    mutate({ email, motDePasse }, {
+      onSuccess: (data) => {
+        setCredentials(data)
+        const role = data?.user?.role;
+        if (role === "ADMIN") {
+          navigate("/admin");
+        } else {
+          navigate("/agent");
+        }
+      },
+    })
+    setEmail("")
+    setMotDePasse("")
   };
 
   return (
@@ -27,7 +44,7 @@ const LoginPage = () => {
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-200 p-8">
         {/* Error Message */}
         {isError && (
-          <Alert type="error" message={"Une erreur est survenue"} />
+          <Alert type="error" message={error.response.data.message} />
         )}
         {errorMessage && <Alert type="error" message={errorMessage} />}
 
@@ -43,7 +60,7 @@ const LoginPage = () => {
               <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="email"
-                placeholder="exemple@commune.gov.tn"
+                placeholder="exemple@commune.com"
                 className="w-full h-11 pl-10 pr-4 rounded-md border border-gray-300 focus:border-[#1A3A8A] focus:ring-1 focus:ring-[#1A3A8A] outline-none text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -62,8 +79,8 @@ const LoginPage = () => {
                 type="password"
                 placeholder="Votre mot de passe"
                 className="w-full h-11 pl-10 pr-4 rounded-md border border-gray-300 focus:border-[#1A3A8A] focus:ring-1 focus:ring-[#1A3A8A] outline-none text-sm"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={motDePasse}
+                onChange={(e) => setMotDePasse(e.target.value)}
               />
             </div>
           </div>
@@ -71,7 +88,7 @@ const LoginPage = () => {
           {/* BUTTON */}
           <button
             type="submit"
-            className="w-full h-11 bg-[#1A3A8A] text-white font-semibold rounded-md hover:bg-[#163174] transition-all"
+            className="cursor-pointer w-full h-11 bg-[#1A3A8A] text-white font-semibold rounded-md hover:bg-[#163174] transition-all"
           >
             {isPending ? <Spinner sm /> : "Se connecter"}
           </button>
