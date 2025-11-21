@@ -140,6 +140,9 @@ export const changeStatut = async (req, res) => {
   }
 }
 
+
+
+
 // Add attachments (piecesJointe): accept single object or array of { publicId, secureUrl, type }
 export const addAttachments = async (req, res) => {
   try {
