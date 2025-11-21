@@ -114,8 +114,6 @@ export const replyIntervention = async (req, res) => {
 }
 
 
-
-
 // Change statut only
 export const changeStatut = async (req, res) => {
   try {
@@ -139,9 +137,6 @@ export const changeStatut = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' })
   }
 }
-
-
-
 
 // Add attachments (piecesJointe): accept single object or array of { publicId, secureUrl, type }
 export const addAttachments = async (req, res) => {
@@ -178,8 +173,6 @@ export const addAttachments = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' })
   }
 }
-
-
 
 // Statistics: total, counts by statut, top 5 themes, top 5 communes
 // helper to fetch top themes (returns array)
