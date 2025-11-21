@@ -3,7 +3,7 @@ import { communes } from "../../../data";
 
 export default function CommuneTable() {
   const deleteCommune = (id) => {
-    communes = communes.filter((commune) => commune.id !== id);
+    console.log("first")
   };
   return (
     <div className="overflow-x-auto border rounded-lg bg-white shadow">
