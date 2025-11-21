@@ -31,9 +31,6 @@ const AgentSidebar = () => {
           <Link to="/agent/interventions" className="block hover:text-blue-600">
             Interventions
           </Link>
-          <Link to="/agent/profile" className="block hover:text-blue-600">
-            Profile
-          </Link>
         </nav>
       </aside>
     </>
