@@ -1,16 +1,11 @@
-
-import './App.css'
-import { BrowserRouter as Router,Routes,Route } from 'react-router-dom'
-import Register from './components/Register'
-import Login from './components/Login'
-import TaskPage from './components/TaskPage'
+import { Outlet } from 'react-router-dom'
 
 function App() {
 
   return (
-    <div className='text-center text-2xl font-bold text-green-900'>
-      Hello
-    </div>
+    <main className="min-h-[100vh]">
+      <Outlet/>
+    </main>
   )
 }
 
