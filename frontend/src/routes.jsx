@@ -13,7 +13,6 @@ import UsersPage from "./pages/admin/users/UsersPage.jsx";
 import ThemesPage from "./pages/admin/themes/ThemesPage.jsx";
 import AgentDashboard from "./pages/agent/AgentDashboard.jsx";
 import InterventionsAgentPage from "./pages/agent/InterventionsAgentPage.jsx";
-import AgentProfile from "./pages/agent/AgentProfile.jsx";
 import CommunesPage from "./pages/admin/communes/CommunesPage.jsx";
 import CreateUserPage from "./pages/admin/users/CreateUserPage.jsx";
 import EditUserPage from "./pages/admin/users/EditUserPage.jsx";
@@ -21,6 +20,8 @@ import CreateCommunePage from "./pages/admin/communes/CreateCommunePage.jsx";
 import EditCommunePage from "./pages/admin/communes/EditCommunePage.jsx";
 import CreateThemePage from "./pages/admin/themes/CreateThemePage.jsx";
 import EditThemePage from "./pages/admin/themes/EditThemePage.jsx";
+import CreateInterventionPage from "./pages/agent/CreateInterventionPage.jsx";
+import EditInterventionPage from "./pages/agent/EditInterventionPage.jsx";
 
 function Router() {
   const isAuthenticated = true;
@@ -67,7 +68,8 @@ function Router() {
           children: [
             { index: true, element: <AgentDashboard /> },
             { path: "interventions", element: <InterventionsAgentPage /> },
-            { path: "profile", element: <AgentProfile /> },
+            { path: "interventions/create", element: <CreateInterventionPage /> },
+            { path: "interventions/:id/edit", element: <EditInterventionPage /> },
           ],
         },
 
